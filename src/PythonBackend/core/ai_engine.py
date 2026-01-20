@@ -45,6 +45,13 @@ except ImportError as e:
     print(f"Database Manager not available: {e}")
     DATABASE_MANAGER_AVAILABLE = False
 
+try:
+    from .voice_processor import VoiceProcessor
+    VOICE_PROCESSOR_AVAILABLE = True
+except ImportError as e:
+    print(f"Voice Processor not available: {e}")
+    VOICE_PROCESSOR_AVAILABLE = False
+    
 class AICoreEngine:
     """Enhanced AI Engine with Database Integration"""
     
@@ -52,9 +59,101 @@ class AICoreEngine:
         self.setup_logging()
         self.logger.info("AICoreEngine initializing...")
         self.session_id = session_id
-        
-        # Initialize timing
         self.start_time = time.time()
+        
+        
+        # Voice processor
+        if VOICE_PROCESSOR_AVAILABLE:
+            try:
+                self.voice_processor = VoiceProcessor()
+                # Set callbacks
+                self.voice_processor.set_speech_callback(self._handle_voice_input)
+                self.voice_processor.set_error_callback(self._handle_voice_error)
+                self.logger.info("✅ Voice Processor loaded")
+            except Exception as e:
+                self.logger.error(f"Voice Processor init error: {e}")
+                self.voice_processor = None
+        else:
+            self.voice_processor = None
+            self.logger.warning("⚠️  Voice Processor not available")
+    
+    def _handle_voice_input(self, text: str):
+        """Handle voice input from VoiceProcessor"""
+        try:
+            self.logger.info(f"🎤 Voice input received: '{text}'")
+            
+            # Process the voice input
+            result = self.process_input(text)
+            
+            # Speak the response if voice processor is available
+            if self.voice_processor and result.get('response'):
+                self.voice_processor.speak(result['response'])
+                
+        except Exception as e:
+            self.logger.error(f"Error handling voice input: {e}")
+            if self.voice_processor:
+                self.voice_processor.speak("Sorry, I encountered an error processing your request.")
+    
+    def _handle_voice_error(self, error_message: str):
+        """Handle voice processing errors"""
+        self.logger.error(f"🎤 Voice error: {error_message}")
+        # Optionally speak the error
+        if self.voice_processor:
+            self.voice_processor.speak(f"Voice error: {error_message}")
+    
+    def start_voice_listening(self, continuous: bool = True) -> bool:
+        """
+        Start voice listening
+        
+        Args:
+            continuous (bool): Whether to listen continuously
+            
+        Returns:
+            bool: Success status
+        """
+        if not self.voice_processor:
+            self.logger.error("Voice processor not available")
+            return False
+        
+        return self.voice_processor.start_listening(continuous)
+    
+    def stop_voice_listening(self):
+        """Stop voice listening"""
+        if self.voice_processor:
+            self.voice_processor.stop_listening()
+    
+    def speak_response(self, text: str, blocking: bool = False) -> bool:
+        """
+        Speak a response using TTS
+        
+        Args:
+            text (str): Text to speak
+            blocking (bool): Whether to wait for speech completion
+            
+        Returns:
+            bool: Success status
+        """
+        if not self.voice_processor:
+            self.logger.error("Voice processor not available")
+            return False
+        
+        return self.voice_processor.speak(text, blocking)
+    
+    # get_status metodunu da güncelleyin
+    def get_status(self) -> Dict[str, Any]:
+        status = {
+            # ... mevcut kod ...
+        }
+        
+        # Add voice processor status if available
+        if self.voice_processor:
+            try:
+                voice_status = self.voice_processor.get_status()
+                status["voice_processor"] = voice_status
+            except Exception as e:
+                self.logger.debug(f"Could not get voice processor status: {e}")
+        
+        return status
         
         # Profile manager
         if PROFILE_MANAGER_AVAILABLE:

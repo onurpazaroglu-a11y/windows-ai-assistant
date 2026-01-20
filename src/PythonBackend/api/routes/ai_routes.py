@@ -22,7 +22,19 @@ except ImportError as e:
     print(f"⚠️  Core engine import warning: {e}")
     ENGINE_AVAILABLE = False
 
-# Check for DatabaseManager availability
+# Check for optional components
+try:
+    from core.voice_processor import VoiceProcessor
+    VOICE_PROCESSOR_AVAILABLE = True
+except ImportError:
+    VOICE_PROCESSOR_AVAILABLE = False
+
+try:
+    from core.sync_service import SyncService
+    SYNC_SERVICE_AVAILABLE = True
+except ImportError:
+    SYNC_SERVICE_AVAILABLE = False
+
 try:
     from core.database_manager import DatabaseManager
     DATABASE_MANAGER_AVAILABLE = True
@@ -42,6 +54,14 @@ class CharacterSwitchRequest(BaseModel):
 
 class BackupRequest(BaseModel):
     backup_path: Optional[str] = None
+
+class SpeakTextRequest(BaseModel):
+    text: str
+    blocking: bool = False
+
+class SyncStartRequest(BaseModel):
+    auto_sync: bool = True
+    watch_files: bool = True
 
 # Router
 router = APIRouter(prefix="/ai", tags=["AI Engine"])
@@ -167,8 +187,183 @@ async def get_compatible_characters(profile_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Voice-related endpoints (only if VoiceProcessor is available)
+if VOICE_PROCESSOR_AVAILABLE and ENGINE_AVAILABLE and ai_engine and hasattr(ai_engine, 'voice_processor'):
+    @router.post("/voice/start")
+    async def start_voice_listening(continuous: bool = True):
+        """Start voice recognition listening"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'voice_processor') or ai_engine.voice_processor is None:
+                raise HTTPException(status_code=500, detail="Voice Processor not available")
+            
+            success = ai_engine.start_voice_listening(continuous)
+            return {
+                "success": success,
+                "message": "Voice listening started" if success else "Failed to start voice listening"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.post("/voice/stop")
+    async def stop_voice_listening():
+        """Stop voice recognition listening"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'voice_processor') or ai_engine.voice_processor is None:
+                raise HTTPException(status_code=500, detail="Voice Processor not available")
+            
+            ai_engine.stop_voice_listening()
+            return {"success": True, "message": "Voice listening stopped"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.post("/voice/speak")
+    async def speak_text(text_request: SpeakTextRequest):
+        """Convert text to speech"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'voice_processor') or ai_engine.voice_processor is None:
+                raise HTTPException(status_code=500, detail="Voice Processor not available")
+            
+            success = ai_engine.speak_response(text_request.text, text_request.blocking)
+            return {
+                "success": success,
+                "message": "Speaking text" if success else "Failed to speak text"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.get("/voice/status")
+    async def get_voice_status():
+        """Get voice processor status"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'voice_processor') or ai_engine.voice_processor is None:
+                return {"status": "Voice Processor not available"}
+            
+            status = ai_engine.voice_processor.get_status()
+            return status
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.post("/voice/test")
+    async def test_voice_system():
+        """Test voice system functionality"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'voice_processor') or ai_engine.voice_processor is None:
+                raise HTTPException(status_code=500, detail="Voice Processor not available")
+            
+            # Test microphone
+            mic_test = ai_engine.voice_processor.test_microphone()
+            
+            # Test TTS with a simple phrase
+            tts_success = ai_engine.speak_response("Voice system test successful", blocking=True)
+            
+            return {
+                "microphone_test": mic_test,
+                "tts_test": {"success": tts_success, "message": "TTS test completed"},
+                "overall_status": "success" if mic_test.get('success') and tts_success else "partial"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+# Sync-related endpoints (only if SyncService is available)
+if SYNC_SERVICE_AVAILABLE and ENGINE_AVAILABLE and ai_engine and hasattr(ai_engine, 'sync_service'):
+    @router.post("/sync/start")
+    async def start_sync_service(sync_request: SyncStartRequest = None):
+        """Start sync service"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'sync_service') or ai_engine.sync_service is None:
+                raise HTTPException(status_code=500, detail="Sync Service not available")
+            
+            auto_sync = sync_request.auto_sync if sync_request else True
+            watch_files = sync_request.watch_files if sync_request else True
+            
+            success = ai_engine.sync_service.start_sync_service(auto_sync, watch_files)
+            return {
+                "success": success,
+                "message": "Sync service started" if success else "Failed to start sync service"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.post("/sync/stop")
+    async def stop_sync_service():
+        """Stop sync service"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'sync_service') or ai_engine.sync_service is None:
+                raise HTTPException(status_code=500, detail="Sync Service not available")
+            
+            ai_engine.sync_service.stop_sync_service()
+            return {"success": True, "message": "Sync service stopped"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.post("/sync/force")
+    async def force_sync():
+        """Force immediate sync"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'sync_service') or ai_engine.sync_service is None:
+                raise HTTPException(status_code=500, detail="Sync Service not available")
+            
+            result = ai_engine.sync_service.force_sync()
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.get("/sync/status")
+    async def get_sync_status():
+        """Get sync service status"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'sync_service') or ai_engine.sync_service is None:
+                return {"status": "Sync Service not available"}
+            
+            status = ai_engine.sync_service.get_sync_status()
+            return status
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.get("/sync/files")
+    async def get_tracked_files():
+        """Get list of tracked files"""
+        if not ENGINE_AVAILABLE or ai_engine is None:
+            raise HTTPException(status_code=500, detail="AI Engine not available")
+        
+        try:
+            if not hasattr(ai_engine, 'sync_service') or ai_engine.sync_service is None:
+                raise HTTPException(status_code=500, detail="Sync Service not available")
+            
+            files = ai_engine.sync_service.get_tracked_files()
+            return {"files": files, "count": len(files)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
 # Database-related endpoints (only if DatabaseManager is available)
-if DATABASE_MANAGER_AVAILABLE:
+if DATABASE_MANAGER_AVAILABLE and ENGINE_AVAILABLE and ai_engine and hasattr(ai_engine, 'database_manager'):
     @router.post("/database/backup")
     async def backup_database(backup_request: BackupRequest = None):
         """Backup database"""
@@ -244,7 +439,9 @@ async def health_check():
                 "character_loader": ai_engine.character_loader is not None,
                 "context_manager": ai_engine.context_manager is not None,
                 "response_generator": ai_engine.response_generator is not None,
-                "database_manager": ai_engine.database_manager is not None if hasattr(ai_engine, 'database_manager') else False
+                "voice_processor": hasattr(ai_engine, 'voice_processor') and ai_engine.voice_processor is not None,
+                "sync_service": hasattr(ai_engine, 'sync_service') and ai_engine.sync_service is not None,
+                "database_manager": hasattr(ai_engine, 'database_manager') and ai_engine.database_manager is not None
             }
         }
     else:

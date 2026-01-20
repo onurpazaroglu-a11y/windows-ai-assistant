@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows AI Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Windows AI Assistant</h1>
+            <div class="status-bar">
+                <span id="status-indicator" class="status-offline">🔴 Offline</span>
+                <span id="profile-display">Profile: Personal | Character: Artemis</span>
+            </div>
+        </header>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <strong>AI Assistant:</strong>
+                        <p>Merhaba! Size nasıl yardımcı olabilirim?</p>
+                    </div>
+                    <div class="message-time">şimdi</div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <input type="text" id="user-input" placeholder="Mesajınızı yazın..." autocomplete="off">
+                    <button id="send-button" class="send-btn"> Gönder </button>
+                    <button id="voice-button" class="voice-btn">🎤</button>
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="quick-btn" data-command="Merhaba">👋 Merhaba</button>
+                    <button class="quick-btn" data-command="Saat kaç?">⏰ Saat</button>
+                    <button class="quick-btn" data-command="Yardım et">❓ Yardım</button>
+                    <button class="quick-btn" data-command="Profil değiştir">🔄 Profil</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-panel">
+            <h3>Ayarlar</h3>
+            <div class="setting-group">
+                <label for="profile-select">Profil:</label>
+                <select id="profile-select">
+                    <option value="personal">Kişisel Asistan</option>
+                    <option value="business">İş Asistanı</option>
+                    <option value="education">Eğitim Asistanı</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <label for="character-select">Karakter:</label>
+                <select id="character-select">
+                    <option value="artemis">Artemis</option>
+                    <option value="corporate">Corporate Advisor</option>
+                    <option value="study_buddy">Study Buddy</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <button id="sync-now" class="action-btn">🔄 Senkronize Et</button>
+                <button id="clear-chat" class="action-btn">🗑️ Sohbeti Temizle</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

@@ -7,6 +7,7 @@ Complete version with all routes working
 import sys
 import os
 from pathlib import Path
+import uvicorn
 
 # Python path'i düzenle
 current_dir = Path(__file__).parent.absolute()
@@ -179,6 +180,6 @@ except Exception as e:
         return {"message": "Fallback app running", "error": str(e)}
 
 if __name__ == "__main__":
-    print("🚀 Starting FastAPI server on http://0.0.0.0:8000")
+    print("🚀 Starting FastAPI server on http://127.0.0.1:8000")
     print("📄 Docs: http://0.0.0.0:8000/docs")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
