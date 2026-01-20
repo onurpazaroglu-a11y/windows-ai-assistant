@@ -1,0 +1,21 @@
+{
+  "ai_engine": {
+    "version": "1.0.0",
+    "default_language": "tr",
+    "supported_languages": ["tr", "en", "de", "fr"],
+    "max_context_length": 1000,
+    "confidence_threshold": 0.3,
+    "logging_level": "INFO"
+  },
+  "performance": {
+    "max_response_time_ms": 2000,
+    "cache_enabled": true,
+    "cache_size": 1000
+  },
+  "features": {
+    "voice_processing": true,
+    "text_processing": true,
+    "context_aware": true,
+    "learning_enabled": true
+  }
+}

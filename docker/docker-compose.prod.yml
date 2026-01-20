@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  ai-engine:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.python
+    container_name: ai-assistant-prod
+    ports:
+      - "8000:8000"
+    volumes:
+      - databases-volume:/app/databases
+      - obsidian-volume:/app/obsidian_vault
+      - ./production-configs:/app/configs
+    environment:
+      - ENV=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    networks:
+      - assistant-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: ai-assistant-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - ai-engine
+    networks:
+      - assistant-network
+    restart: unless-stopped
+
+networks:
+  assistant-network:
+    driver: bridge
+
+volumes:
+  databases-volume:
+  obsidian-volume:

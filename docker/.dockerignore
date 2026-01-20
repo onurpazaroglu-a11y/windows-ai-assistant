@@ -1,0 +1,41 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/build/
+**/dist/
+
+# IDE files
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.suo
+
+# Logs
+**/*.log
+logs/
+
+# Temporary files
+**/*.tmp
+**/*.temp
+temp/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+.docker/
+
+# Test files
+**/test/
+**/tests/
+**/*_test.py
+
+# Virtual environments
+venv/
+env/
+**/*.env
+
+# OS generated files
+**/Thumbs.db
+**/.DS_Store

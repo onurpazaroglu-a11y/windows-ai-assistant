@@ -1,0 +1,25 @@
+{
+  "id": "pa_00001",
+  "name": {
+    "tr": "Özel Asistan",
+    "en": "Custom Assistant"
+  },
+  "description": {
+    "tr": "Özelleştirilmiş asistan profili",
+    "en": "Customized assistant profile"
+  },
+  "target_users": ["advanced_users"],
+  "features": {
+    "voice_commands": true,
+    "web_search": true,
+    "offline_mode": true,
+    "custom_feature": true
+  },
+  "minimum_requirements": {
+    "ram_mb": 1024,
+    "disk_space_mb": 200,
+    "internet_required": false
+  },
+  "supported_languages": ["tr", "en", "de"],
+  "character_reference": "artemis"
+}

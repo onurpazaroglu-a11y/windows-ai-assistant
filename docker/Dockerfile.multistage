@@ -1,0 +1,31 @@
+# Build stage
+FROM python:3.9 AS builder
+WORKDIR /build
+COPY src/PythonBackend/requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /wheels -r requirements.txt
+
+# Runtime stage
+FROM python:3.9-slim
+WORKDIR /app
+
+# Sistem bağımlılıkları
+RUN apt-get update && apt-get install -y \
+    portaudio19-dev \
+    python3-pyaudio \
+    && rm -rf /var/lib/apt/lists/*
+
+# Wheel dosyalarını kopyala
+COPY --from=builder /wheels /wheels
+COPY src/PythonBackend/requirements.txt .
+
+# Paketleri yükle
+RUN pip install --no-cache /wheels/*
+
+# Uygulama kodunu kopyala
+COPY src/PythonBackend/ ./src/PythonBackend/
+
+# Port aç
+EXPOSE 8000
+
+# Çalıştır
+CMD ["python", "src/PythonBackend/main.py"]

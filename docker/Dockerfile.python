@@ -1,0 +1,32 @@
+# Python backend için multi-stage build
+FROM python:3.9-slim AS python-base
+
+# Sistem bağımlılıkları
+RUN apt-get update && apt-get install -y \
+    gcc \
+    portaudio19-dev \
+    python3-pyaudio \
+    libasound2-dev \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Çalışma dizini
+WORKDIR /app
+
+# Gereksinimleri kopyala ve yükle
+COPY src/PythonBackend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Uygulama kodunu kopyala
+COPY src/PythonBackend/ ./src/PythonBackend/
+
+# Environment variables
+ENV PYTHONPATH=/app/src/PythonBackend
+ENV APP_ENV=development
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Uygulamayı başlat
+CMD ["python", "src/PythonBackend/main.py"]

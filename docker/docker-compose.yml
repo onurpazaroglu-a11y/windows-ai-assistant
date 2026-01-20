@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Python AI Engine
+  ai-engine:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.python
+    container_name: ai-assistant-python
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src/PythonBackend:/app/src/PythonBackend
+      - ../databases:/app/databases
+      - ../obsidian_vault:/app/obsidian_vault
+      - ../configs:/app/configs
+    environment:
+      - ENV=development
+      - DEBUG=true
+      - DATABASE_URL=sqlite:///databases/ai_memory.db
+    networks:
+      - assistant-network
+    restart: unless-stopped
+
+  # Development database (opsiyonel)
+  db-admin:
+    image: adminer:4.8.1
+    container_name: ai-assistant-db-admin
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=db
+    networks:
+      - assistant-network
+    depends_on:
+      - ai-engine
+    restart: unless-stopped
+
+  # Obsidian sync service
+  obsidian-sync:
+    image: ubuntu:20.04
+    container_name: ai-assistant-sync
+    volumes:
+      - ../obsidian_vault:/vault
+      - ../databases:/databases
+    command: >
+      bash -c "
+      apt-get update && apt-get install -y inotify-tools &&
+      while true; do
+        inotifywait -r -e modify,create,delete /vault &&
+        echo 'Vault changed, triggering sync...' &&
+        # Burada sync script çağrılabilir
+        sleep 1;
+      done
+      "
+    networks:
+      - assistant-network
+
+networks:
+  assistant-network:
+    driver: bridge
+
+volumes:
+  databases-volume:
+  obsidian-volume:

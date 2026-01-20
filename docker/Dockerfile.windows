@@ -1,0 +1,11 @@
+# Windows container için - sadece Windows host'larda çalışır
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+# .NET Framework yükleme (gerekirse)
+# Python yükleme
+
+# Uygulama dosyalarını kopyala
+COPY dist/WindowsFrontend/ C:/app/
+
+# Entry point
+CMD ["C:/app/AssistantApp.exe"]
