@@ -156,7 +156,6 @@ POST /ai/database/backup - Database backup
 POST /ai/database/cleanup - Clean old data
 
 🎮 **Usage Examples**
-
 Basic Interaction
 # Send a greeting
 curl -X POST http://localhost:8000/ai/process \
@@ -196,7 +195,7 @@ Open a Pull Request
 This project is licensed under the MIT License - see the LICENSE [blocked] file for details.
 
 👥 **Authors**
-Your Name - Initial work - YourGitHub
+Artifact Studio - Initial work - YourGitHub
 
 🙏 **Acknowledgments**
 Thanks to all contributors who participated in this project
