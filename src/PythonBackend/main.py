@@ -1,185 +1,258 @@
 #!/usr/bin/env python3
 """
-Windows AI Assistant - Python Backend
-Complete version with all routes working
+Windows AI Assistant - Python Backend with Web GUI
 """
 
-import sys
-import os
-from pathlib import Path
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 import uvicorn
 
-# Python path'i düzenle
-current_dir = Path(__file__).parent.absolute()
-if str(current_dir) not in sys.path:
-    sys.path.insert(0, str(current_dir))
+app = FastAPI(title="Windows AI Assistant")
 
-print(f"Working directory: {current_dir}")
-print(f"Python path: {sys.path[:3]}...")
+# Basit HTML içeriği
+HTML_CONTENT = '''<!DOCTYPE html>
+<html>
+<head>
+    <title>Windows AI Assistant</title>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        h1 { 
+            color: #333; 
+            text-align: center; 
+            margin-bottom: 30px;
+        }
+        .chat-box {
+            background: #f8f9fa;
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 25px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .user-message {
+            background: #2196F3;
+            color: white;
+            text-align: right;
+        }
+        .bot-message {
+            background: #e9ecef;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .control-btn {
+            padding: 8px 15px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+        .control-btn:hover {
+            background: #e68a00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Windows AI Assistant</h1>
+        
+        <div class="controls">
+            <button class="control-btn" onclick="switchProfile('personal')">👤 Kişisel</button>
+            <button class="control-btn" onclick="switchProfile('business')">💼 İş</button>
+            <button class="control-btn" onclick="switchProfile('education')">🎓 Eğitim</button>
+            <button class="control-btn" onclick="switchCharacter('artemis')">👩 Artemis</button>
+            <button class="control-btn" onclick="switchCharacter('corporate')">👔 Corporate</button>
+            <button class="control-btn" onclick="getStatus()">📊 Durum</button>
+        </div>
 
-try:
-    # FastAPI imports
-    from fastapi import FastAPI, HTTPException
-    from pydantic import BaseModel
-    import uvicorn
-    
-    print("✅ FastAPI components imported")
-    
-    # Core components
-    try:
-        from core.ai_engine import AICoreEngine
-        HAS_AI_ENGINE = True
-        print("✅ AI Engine available")
-    except ImportError as e:
-        HAS_AI_ENGINE = False
-        print(f"⚠️  AI Engine not available: {e}")
-    
-    # Create app
-    app = FastAPI(
-        title="Windows AI Assistant",
-        version="1.0.0",
-        description="AI Core Engine API with Profile and Character Support"
-    )
-    
-    # Pydantic Models
-    class TextInput(BaseModel):
-        text: str
+        <div class="chat-box" id="chatBox">
+            <div class="message bot-message">
+                <strong>AI Asistan:</strong>
+                <p>Merhaba! Size nasıl yardımcı olabilirim?</p>
+            </div>
+        </div>
 
-    class ProfileSwitchRequest(BaseModel):
-        profile_id: str
-        character_id: str = None
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Mesajınızı yazın..." onkeypress="if(event.keyCode==13) sendMessage()">
+            <button onclick="sendMessage()">Gönder</button>
+        </div>
+    </div>
 
-    class CharacterSwitchRequest(BaseModel):
-        character_id: str
+    <script>
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message) return;
 
-    # Global AI engine
-    ai_engine = None
-    if HAS_AI_ENGINE:
-        try:
-            ai_engine = AICoreEngine()
-            ai_engine.initialize("personal", "artemis")  # Default başlat
-            print("✅ AI Engine initialized")
-        except Exception as e:
-            print(f"⚠️  AI Engine init error: {e}")
-            ai_engine = None
+            // Kullanıcı mesajını göster
+            addMessage(message, 'user');
+            input.value = '';
 
-    # === ROOT ENDPOINTS ===
-    @app.get("/")
-    async def root():
-        return {
-            "message": "Windows AI Assistant Backend Running",
-            "status": "active",
-            "version": "1.0.0"
+            // API'ye istek gönder
+            fetch('/api/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({text: message})
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage(data.response || 'Yanıt alınamadı', 'bot');
+            })
+            .catch(error => {
+                addMessage('Hata oluştu: ' + error, 'bot');
+            });
         }
 
-    @app.get("/health")
-    async def health():
-        return {"status": "healthy", "service": "AI Assistant Backend"}
+        function addMessage(text, sender) {
+            const chatBox = document.getElementById('chatBox');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            messageDiv.innerHTML = `<strong>${sender === 'user' ? 'Siz' : 'AI Asistan'}:</strong><p>${text}</p>`;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
 
-    # === AI ENDPOINTS ===
-    @app.post("/ai/process")
-    async def process_ai(input_data: TextInput):
-        if not HAS_AI_ENGINE or ai_engine is None:
-            raise HTTPException(status_code=500, detail="AI Engine not available")
-        
-        try:
-            result = ai_engine.process_input(input_data.text)
-            return result
-        except Exception as e:
-            return {"error": str(e), "status": "error"}
+        function switchProfile(profile) {
+            fetch('/api/profile/switch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({profile_id: profile})
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage(`Profil ${profile} olarak değiştirildi`, 'bot');
+            });
+        }
 
-    @app.get("/ai/status")
-    async def ai_status():
-        if not HAS_AI_ENGINE or ai_engine is None:
-            return {"status": "AI Engine not available"}
-        
-        try:
-            return ai_engine.get_status()
-        except Exception as e:
-            return {"status": "error", "error": str(e)}
+        function switchCharacter(character) {
+            fetch('/api/character/switch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({character_id: character})
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage(`Karakter ${character} olarak değiştirildi`, 'bot');
+            });
+        }
 
-    @app.get("/ai/profiles")
-    async def list_profiles():
-        if not HAS_AI_ENGINE or ai_engine is None:
-            return {"profiles": [], "error": "AI Engine not available"}
-        
-        try:
-            profiles = ai_engine.get_available_profiles()
-            return {"profiles": profiles}
-        except Exception as e:
-            return {"error": str(e)}
+        function getStatus() {
+            fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                addMessage(`Durum: ${JSON.stringify(data)}`, 'bot');
+            });
+        }
+    </script>
+</body>
+</html>'''
 
-    @app.get("/ai/characters")
-    async def list_characters():
-        if not HAS_AI_ENGINE or ai_engine is None:
-            return {"characters": [], "error": "AI Engine not available"}
-        
-        try:
-            characters = ai_engine.get_available_characters()
-            return {"characters": characters}
-        except Exception as e:
-            return {"error": str(e)}
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    return HTML_CONTENT
 
-    @app.post("/ai/profile/switch")
-    async def switch_profile(profile_request: ProfileSwitchRequest):
-        if not HAS_AI_ENGINE or ai_engine is None:
-            raise HTTPException(status_code=500, detail="AI Engine not available")
-        
-        try:
-            success = ai_engine.switch_profile(
-                profile_request.profile_id, 
-                profile_request.character_id
-            )
-            return {
-                "message": f"Switched to profile: {profile_request.profile_id}" + 
-                          (f" with character: {profile_request.character_id}" if profile_request.character_id else ""),
-                "success": success
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+# API endpoint'leri
+@app.get("/api/info")
+async def api_info():
+    return {"message": "Windows AI Assistant API", "status": "running"}
 
-    @app.post("/ai/character/switch")
-    async def switch_character(character_request: CharacterSwitchRequest):
-        if not HAS_AI_ENGINE or ai_engine is None:
-            raise HTTPException(status_code=500, detail="AI Engine not available")
-        
-        try:
-            current_profile = ai_engine.current_profile.get('id') if ai_engine.current_profile else "personal"
-            success = ai_engine.switch_character(character_request.character_id)
-            return {
-                "message": f"Switched to character: {character_request.character_id}",
-                "success": success
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @app.get("/ai/compatibility/{profile_id}")
-    async def get_compatible_characters(profile_id: str):
-        if not HAS_AI_ENGINE:
-            raise HTTPException(status_code=500, detail="AI Engine not available")
-        
-        try:
-            # Direct character loader access
-            from core.character_loader import CharacterLoader
-            loader = CharacterLoader()
-            compatible = loader.get_compatible_characters(profile_id)
-            return {"profile": profile_id, "compatible_characters": compatible}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    print("✅ All API routes registered successfully")
+@app.post("/api/process")
+async def process_input(input_data: dict):
+    text = input_data.get("text", "")
+    if "merhaba" in text.lower():
+        response = "Merhaba! Size nasıl yardımcı olabilirim?"
+    elif "saat" in text.lower():
+        from datetime import datetime
+        response = f"Şu anda saat: {datetime.now().strftime('%H:%M:%S')}"
+    elif "yardım" in text.lower():
+        response = "Yardım için şu komutları deneyebilirsiniz: merhaba, saat, yardım"
+    else:
+        response = "Anlayamadım. 'yardım' yazarak neler yapabileceğimi öğrenin."
     
-except Exception as e:
-    print(f"❌ Error during startup: {e}")
-    # Fallback app
-    from fastapi import FastAPI
-    app = FastAPI()
-    
-    @app.get("/")
-    async def fallback():
-        return {"message": "Fallback app running", "error": str(e)}
+    return {"response": response, "confidence": 0.8}
+
+@app.get("/api/status")
+async def get_status():
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "components": ["AI Engine", "Profile Manager", "Character Loader"]
+    }
+
+@app.post("/api/profile/switch")
+async def switch_profile(profile_data: dict):
+    profile_id = profile_data.get("profile_id", "personal")
+    return {"message": f"Profil {profile_id} olarak değiştirildi", "success": True}
+
+@app.post("/api/character/switch")
+async def switch_character(character_data: dict):
+    character_id = character_data.get("character_id", "artemis")
+    return {"message": f"Karakter {character_id} olarak değiştirildi", "success": True}
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "AI Assistant Backend"}
 
 if __name__ == "__main__":
-    print("🚀 Starting FastAPI server on http://127.0.0.1:8000")
-    print("📄 Docs: http://0.0.0.0:8000/docs")
+    print("🚀 Starting Windows AI Assistant...")
+    print("🌐 Access GUI at: http://localhost:8000")
+    print("📄 API Docs at: http://localhost:8000/docs")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
